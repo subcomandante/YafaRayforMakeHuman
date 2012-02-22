@@ -65,23 +65,30 @@ for dll in dllArray:
         print("ERROR: Failed to load library " + dll + ", " + repr(e))
 
 print 'YafaRay Libs loaded sucesfull'
-#print '#                   #'
 
-# The output path defines the standard output directory and the generated include file name.
-# The default directory is pov_output, within the MakeHuman installation directory.
-# The default include file name is makehuman.inc.
-outputpath = 'yafa_output/makehuman.inc'
+# The output path defines the standard output directory and the generated image files.
+# The default directory is yafaray_output, within the MakeHuman installation directory.
+# The default exported XML file name is yafaray.xml.
 
-# The export routine can generate a simple mesh2 object that is quick to render, but
-# quite inflexible, or it can generate an array based format along with various macros
-# that can be used in a wide variety of ways, but which is slower to render.
+outputpath = 'yafaray_output/'
 
-format = ''  # "array" or "mesh2"
+# Define the format of render; gui, console or export to xml file
 
-# The POV-Ray export function can just export the object or it can also call POV-Ray to
+format = 'gui'  
+
+# The YafaRay export function can just export the object or it can also call POV-Ray to
 # render a scene file. By default the scene file will be the generated sample scene file.
 
-action = 'export'  # "export" or "render"
+action = 'render'  # "export" or "render"
+
+# 'gui' for use QT4 YafaRay interface, 'console' for YafaRay render console or 'xml' for export to .xml file
+source = 'gui'
+
+# Lighting mode: 'dl' for use directlighting or 'pm' for PhotonMap 
+lighting = 'dl'
+
+# define background fron YafaRay
+world = 'texture'
 
 # By default the "render" action renders the generated POV scene file, but you can
 # specify a scene file to render instead.
@@ -92,7 +99,9 @@ renderscenefile = ''  # Use "" to render the default scene file.
 # A number of typical examples are provided.
 # Don't use the backslash character in the path.
 
-#povray_path = 'C:\\Users\\mflerackers\\AppData\\Local\\Programs\\POV-Ray\\3.7\\bin\\pvengine64.exe'  # MultiProcessor Version
-yafaray_path = 'H:/yafy/Release/yafaray.bat' # is need?
+#
+yafaray_path = 'H:/makehuman/apps/yafy/resources'
+
+
 
 
