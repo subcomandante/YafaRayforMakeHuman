@@ -27,7 +27,6 @@ Raytracing application (a renderer) that is free to download and use.
 """
 
 import os
-import string
 import shutil
 import subprocess
 import mh2yafaray_ini
@@ -67,67 +66,34 @@ def yafarayRenderer(obj, app, settings):
     camera = app.modelCamera
     resolution = (app.settings.get('rendering_width', 800), app.settings.get('rendering_height', 600))
 
-    reload(mh2yafaray_ini)
-    
+    reload(mh2yafaray_ini) 
     path = os.path.join(mh.getPath('render'), mh2yafaray_ini.outputpath)
-    
-    #format = mh2yafaray_ini.format if settings['source'] == 'ini' else settings['format']
     source = mh2yafaray_ini.source if settings['source'] == 'gui' else settings['source']
     action = mh2yafaray_ini.action 
     lighting = mh2yafaray_ini.lighting if settings['lighting'] == 'dl' else settings['lighting']
     world = mh2yafaray_ini.world if settings['world'] == 'texture' else settings['world']
-    image_file = mh2yafaray_ini.yafaray_path 
+    image_path = mh2yafaray_ini.yafaray_path 
         
     if action == 'render':
         
-        if not source == 'xml':
+        if source == 'xml':
+            yi = yafrayinterface.xmlInterface_t()
+        else:
             yi = yafrayinterface.yafrayInterface_t()
             yi.loadPlugins(mh2yafaray_ini.PLUGIN_PATH)
-        else:
-            yi = yafrayinterface.xmlInterface_t()
         
         #--
         yi.startScene()
         
         #-- texture ----
-        yi.paramsClearAll()
-        yi.paramsSetString("filename", image_file +"/body.png") #lighting_blur.jpg")
-        yi.paramsSetFloat("gamma", 2.2 )
-        yi.paramsSetBool("use_alpha", True )
-        yi.paramsSetBool("calc_alpha", True )
-        yi.paramsSetFloat("normalmap", False )
-        yi.paramsSetString("type", "image")
-        yi.createTexture("body")
-        #--
-        yi.paramsClearAll()
-        yi.paramsSetInt("depth", 6)
-        yi.paramsSetBool("hard", False)
-        yi.paramsSetString("noise_type", "newperlin")
-        yi.paramsSetFloat("size", 90.9091)
-        yi.paramsSetString("type", "clouds")
-        #texName = 'clouds'
-        yi.createTexture("bump_skin")
-        
+        yafarayTexture(yi, image_path)
+                
         #-- create material ----
         yafarayMaterial(yi)
              
         #-- lights ----
-        yi.paramsClearAll()
-        yi.paramsSetString("type", "directional")
-        yi.paramsSetPoint("direction", -0.3, -0.3, 0.8 )
-        yi.paramsSetColor("color", 0.9, 0.9, 0.9 )
-        yi.paramsSetFloat("power", 1.0 )
-        yi.createLight("myDirectional")
-
-        #
-        yi.paramsClearAll()
-        yi.paramsSetColor("color", 1, 1, 1, 1)
-        yi.paramsSetPoint("from", 11, 3, 8)
-        yi.paramsSetFloat("power", 160)
-        yi.paramsSetString("type", "pointlight")
-        yi.createLight("LAMP1")
-        
-        
+        yafarayLights(yi)
+                
         #-- geometry ----
         yafarayGeometry(yi, obj)
 
@@ -136,6 +102,7 @@ def yafarayRenderer(obj, app, settings):
         
         #-- background ----
         yafarayBackground(yi, world)
+        
         #-- integrator ----
         yafarayIntegrators(yi, lighting)
         
@@ -144,7 +111,7 @@ def yafarayRenderer(obj, app, settings):
             
             yi.paramsClearAll()
             path_net = str(path).replace("\"","/") # use / for campatibility by Unix systems ?
-            file_type = 'exr'
+            file_type = 'tga' # To do; create option in GUI ?
             yi.paramsSetString("type", file_type)
             yi.paramsSetBool("alpha_channel", False)
             yi.paramsSetBool("z_channel", False)
@@ -178,90 +145,25 @@ def yafarayRenderer(obj, app, settings):
         yi.clearAll()
         #del yi
         
-def yafarayBackground(yi, world):
-    #
-    if world == 'color':
-        yi.paramsClearAll()
-        yi.paramsSetString("type", "constant")
-        yi.paramsSetColor("color", 0.4, 0.5, 0.9 )
-        
-    elif world == 'texture':
-        
-        yi.paramsClearAll()
-        #
-        image_path = mh2yafaray_ini.yafaray_path
-        image_file = image_path + "/uv.png"
-        #image_file = normpath(image_file)
-        yi.paramsSetString("filename", image_file) #"h:/trabajo/hdri/paris_saint_louis_island.hdr")
-        #  studio016.hdr
-        yi.paramsSetFloat("exposure_adjust", 0.1)                    
-        yi.paramsSetString("interpolate", "none") # bilinear
-        yi.paramsSetString("type", "image")        
-        yi.createTexture("world_texture")
-
-        # Export the actual background
-        yi.paramsClearAll()
-        
-        yi.paramsSetString("mapping", "sphere") # sphere, probe
-        
-        yi.paramsSetString("texture", "world_texture")
-        yi.paramsSetBool("ibl", False)
-        yi.paramsSetBool("with_caustic", False)
-        yi.paramsSetBool("with_diffuse", False)
-        yi.paramsSetInt("ibl_samples", 1)
-        yi.paramsSetFloat("power", 1.0)
-        yi.paramsSetFloat("rotation", 0.0)
-        yi.paramsSetString("type", "textureback")
-                
-    else:
-        #
-        yi.paramsSetPoint("from", 0, 10, 40)
-        yi.paramsSetFloat("turbidity", 2)
-        yi.paramsSetFloat("a_var", 1.0)
-        yi.paramsSetFloat("b_var", 1.0)
-        yi.paramsSetFloat("c_var", 1.0)
-        yi.paramsSetFloat("d_var", 1.0)
-        yi.paramsSetFloat("e_var", 1.0)
-        yi.paramsSetBool("add_sun", False)
-        yi.paramsSetFloat("sun_power", 1)
-        yi.paramsSetBool("background_light", False)
-        yi.paramsSetInt("light_samples", 8)
-        yi.paramsSetFloat("power", 1.0)
-        yi.paramsSetString("type", "sunsky")
-        
-    yi.createBackground("world_background")
-    
-def yafarayIntegrators(yi, lighting):
+def yafarayTexture(yi, image_path):
     #
     yi.paramsClearAll()
-    #
-    if lighting == 'dl':
-        yi.paramsSetBool("do_AO", True)
-        yi.paramsSetInt("AO_samples", 16 )
-        yi.paramsSetFloat("AO_distance", 1 )
-        yi.paramsSetColor("AO_color", 0.9, 0.9, 0.9)
-        yi.paramsSetString("type", "directlighting")
-        yi.paramsSetInt("raydepth", 3)
-    else:
-        yi.paramsSetString("type", "photonmapping")
-        yi.paramsSetInt("fg_samples", 16)
-        yi.paramsSetInt("photons", 1000000)
-        yi.paramsSetInt("cPhotons", 1)
-        yi.paramsSetFloat("diffuseRadius", 1.0)
-        yi.paramsSetFloat("causticRadius", 1.0)
-        yi.paramsSetInt("search", 100)
-        yi.paramsSetBool("show_map", False)
-        yi.paramsSetInt("fg_bounces", 3)
-        yi.paramsSetInt("caustic_mix", 100)
-        yi.paramsSetBool("finalGather", True)
-        yi.paramsSetInt("bounces", 3)
-    yi.createIntegrator("default")
-        
-    #--- volume integrator ----
-    # need clear params for create a new integrator
-    yi.paramsClearAll() 
-    yi.paramsSetString("type", "none")
-    yi.createIntegrator("volintegr")
+    yi.paramsSetString("filename", image_path +"/body.png") #lighting_blur.jpg")
+    yi.paramsSetFloat("gamma", 2.2 )
+    yi.paramsSetBool("use_alpha", True )
+    yi.paramsSetBool("calc_alpha", True )
+    yi.paramsSetFloat("normalmap", False )
+    yi.paramsSetString("type", "image")
+    yi.createTexture("body")
+    #--
+    yi.paramsClearAll()
+    yi.paramsSetInt("depth", 6)
+    yi.paramsSetBool("hard", False)
+    yi.paramsSetString("noise_type", "newperlin")
+    yi.paramsSetFloat("size", 90.9091)
+    yi.paramsSetString("type", "clouds")
+    #-
+    yi.createTexture("bump_skin")
 
 def yafarayMaterial(yi):
     # material definitions
@@ -381,9 +283,195 @@ def yafarayMaterial(yi):
     yi.createMaterial("myMat")
         
     materialMap['myMat'] = mat
-                       
+                               
+def yafarayLights(yi):
+    #
+    yi.paramsClearAll()
+    yi.paramsSetString("type", "directional")
+    yi.paramsSetPoint("direction", -0.3, -0.3, 0.8 )
+    yi.paramsSetColor("color", 0.9, 0.9, 0.9 )
+    yi.paramsSetFloat("power", 1.0 )
+    yi.createLight("myDirectional")
+    #
+    yi.paramsClearAll()
+    yi.paramsSetColor("color", 1, 1, 1, 1)
+    yi.paramsSetPoint("from", 11, 3, 8)
+    yi.paramsSetFloat("power", 160)
+    yi.paramsSetString("type", "pointlight")
+    yi.createLight("LAMP1")
+
+def yafarayGeometry(yi, obj):
+    """
+  This function exports mesh data direct in the form of YafaRay Api.
+  
+  Parameters
+  ----------
+  
+  obj:
+      *3D object*. The object to export. This should be the humanoid object with
+      uv-mapping data and Face Groups defined.
+  
+    """
+    
+    # create geometry
+    ''' filter 'joints' objects '''
+    faces = [f for f in obj.faces if not 'joint-' in f.group.name]
+    #
+    have_uv = False
+    v_count= len(obj.verts)
+    f_count = len(faces)*2
+    if len(obj.uvValues) > 0:  have_uv = True
+    #
+    mat = materialMap['myMat'] # Skin_test
+
+    #
+    ID = yi.getNextFreeID()
+    yi.startGeometry()
+    yi.startTriMesh(ID, v_count, f_count, False, have_uv, 0)
+    #
+    for v in obj.verts:
+        yi.addVertex(v.co[0], v.co[1], v.co[2])
+    
+    # UV Vectors 
+    ''' have_uv always is True? '''
+    if have_uv:
+        for uv in obj.uvValues:
+            yi.addUV(uv[0], uv[1])
+    
+    # face index. 
+    ''' only quads in the human mesh ? '''
+    for f in faces:
+        if have_uv:
+            yi.addTriangle(f.verts[0].idx, f.verts[1].idx, f.verts[2].idx, f.uv[0], f.uv[1], f.uv[2], mat)
+            yi.addTriangle(f.verts[2].idx, f.verts[3].idx, f.verts[0].idx, f.uv[2], f.uv[3], f.uv[0], mat)
+        else:
+            yi.addTriangle(f.verts[0].idx, f.verts[1].idx, f.verts[2].idx, mat)
+            yi.addTriangle(f.verts[2].idx, f.verts[3].idx, f.verts[0].idx, mat)
+        
+    yi.endTriMesh()
+    yi.smoothMesh(ID, 181)
+    yi.endGeometry()
+    
+    #
+    return ID
+
+def yafarayCameraData(yi, camera, resolution):
+    """
+    This function outputs standard camera data common to all YafaRay format Api. 
+
+    Parameters
+    ----------
+  
+    cameraSettings:
+      *list of floats*. A list of float values conveying camera and image related 
+      information. This includes the position, orientation and field of view of the
+      camera along with the screen dimensions from MakeHuman. These values are passed 
+      along to YafaRay as variables so that the default rendered image can mimic the
+      image last displayed in MakeHuman. 
+     """     
+    
+    #-- create cam ----
+    ''' change eyeY for eyeZ. In YafaRay, Z is up '''
+    yi.paramsClearAll()
+    yi.paramsSetString("type", "perspective")
+    yi.paramsSetPoint("from", camera.eyeX, camera.eyeY, camera.eyeZ )
+    yi.paramsSetPoint("to", camera.focusX, camera.focusY, camera.focusZ )
+    yi.paramsSetPoint("up", camera.upX, camera.eyeZ, camera.eyeY )
+    yi.paramsSetInt("resx", resolution[0])
+    yi.paramsSetInt("resy", resolution[1])
+    yi.paramsSetFloat("focal", 1.5) #TO do; revised formule for calulate corrected focal value.(fovAngle ?)
+    yi.createCamera("camera")
+    #
+    yi.printInfo("Yafy: Create camera from Makehuman")
+                    
+def yafarayBackground(yi, world):
+    #
+    yi.paramsClearAll()
+    #
+    if world == 'color':
+        yi.paramsSetString("type", "constant")
+        yi.paramsSetColor("color", 0.4, 0.5, 0.9 )
+        
+    elif world == 'texture':
+        
+        #
+        image_path = mh2yafaray_ini.yafaray_path
+        image_file = image_path + "/uv.png"
+        #image_file = normpath(image_file)
+        yi.paramsSetString("filename", image_file) #"h:/trabajo/hdri/paris_saint_louis_island.hdr")
+        #  studio016.hdr
+        yi.paramsSetFloat("exposure_adjust", 0.1)                    
+        yi.paramsSetString("interpolate", "none") # bilinear
+        yi.paramsSetString("type", "image")        
+        yi.createTexture("world_texture")
+
+        ''' need clear params here '''
+        yi.paramsClearAll()
+        
+        yi.paramsSetString("mapping", "sphere") # sphere, probe
+        
+        yi.paramsSetString("texture", "world_texture")
+        yi.paramsSetBool("ibl", False)
+        yi.paramsSetBool("with_caustic", False)
+        yi.paramsSetBool("with_diffuse", False)
+        yi.paramsSetInt("ibl_samples", 1)
+        yi.paramsSetFloat("power", 1.0)
+        yi.paramsSetFloat("rotation", 0.0)
+        yi.paramsSetString("type", "textureback")
+                
+    else:
+        #
+        yi.paramsSetPoint("from", 0, 10, 40)
+        yi.paramsSetFloat("turbidity", 2)
+        yi.paramsSetFloat("a_var", 1.0)
+        yi.paramsSetFloat("b_var", 1.0)
+        yi.paramsSetFloat("c_var", 1.0)
+        yi.paramsSetFloat("d_var", 1.0)
+        yi.paramsSetFloat("e_var", 1.0)
+        yi.paramsSetBool("add_sun", False)
+        yi.paramsSetFloat("sun_power", 1)
+        yi.paramsSetBool("background_light", False)
+        yi.paramsSetInt("light_samples", 8)
+        yi.paramsSetFloat("power", 1.0)
+        yi.paramsSetString("type", "sunsky")
+        
+    yi.createBackground("world_background")
+    
+def yafarayIntegrators(yi, lighting):
+    #
+    yi.paramsClearAll()
+    #
+    if lighting == 'dl':
+        yi.paramsSetBool("do_AO", True)
+        yi.paramsSetInt("AO_samples", 16 )
+        yi.paramsSetFloat("AO_distance", 1 )
+        yi.paramsSetColor("AO_color", 0.9, 0.9, 0.9)
+        yi.paramsSetString("type", "directlighting")
+        yi.paramsSetInt("raydepth", 3)
+    else:
+        yi.paramsSetString("type", "photonmapping")
+        yi.paramsSetInt("fg_samples", 16)
+        yi.paramsSetInt("photons", 1000000)
+        yi.paramsSetInt("cPhotons", 1)
+        yi.paramsSetFloat("diffuseRadius", 1.0)
+        yi.paramsSetFloat("causticRadius", 1.0)
+        yi.paramsSetInt("search", 100)
+        yi.paramsSetBool("show_map", False)
+        yi.paramsSetInt("fg_bounces", 3)
+        yi.paramsSetInt("caustic_mix", 100)
+        yi.paramsSetBool("finalGather", True)
+        yi.paramsSetInt("bounces", 3)
+    yi.createIntegrator("default")
+        
+    #--- volume integrator ----
+    ''' need clear params for create a new integrator '''
+    yi.paramsClearAll() 
+    yi.paramsSetString("type", "none")
+    yi.createIntegrator("volintegr")
+
+
 def makeSphere(yi, nu, nv, x, y, z, rad, mat):
-    # get next free id from interface
+    # 
     nu = 24
     nv = 48
     x=0
@@ -445,86 +533,5 @@ def yafarayRender(yi, resolution):
     yi.paramsSetInt("height", resolution[1])
     yi.paramsSetString("background_name", "world_background")
 
-def yafarayGeometry(yi, obj):
-    """
-  This function exports mesh data direct in the form of YafaRay Api.
-  
-  Parameters
-  ----------
-  
-  obj:
-      *3D object*. The object to export. This should be the humanoid object with
-      uv-mapping data and Face Groups defined.
-  
-    """
-    
-    # create geometry
-    # filter 'joints' objects
-    faces = [f for f in obj.faces if not 'joint-' in f.group.name]
-    #
-    have_uv = False
-    v_count= len(obj.verts)
-    f_count = len(faces)*2
-    if len(obj.uvValues) > 0:  have_uv = True
-    #
-    mat = materialMap['myMat'] # Skin_test
 
-    #
-    ID = yi.getNextFreeID()
-    yi.startGeometry()
-    yi.startTriMesh(ID, v_count, f_count, False, have_uv, 0)
-    #
-    for v in obj.verts:
-        yi.addVertex(v.co[0], v.co[1], v.co[2])
-    
-    # UV Vectors 
-    # have_uv always is True?
-    if have_uv:
-        for uv in obj.uvValues:
-            yi.addUV(uv[0], uv[1])
-    
-    # face index. only quads in the human mesh?
-    for f in faces:
-        if have_uv:
-            yi.addTriangle(f.verts[0].idx, f.verts[1].idx, f.verts[2].idx, f.uv[0], f.uv[1], f.uv[2], mat)
-            yi.addTriangle(f.verts[2].idx, f.verts[3].idx, f.verts[0].idx, f.uv[2], f.uv[3], f.uv[0], mat)
-        else:
-            yi.addTriangle(f.verts[0].idx, f.verts[1].idx, f.verts[2].idx, mat)
-            yi.addTriangle(f.verts[2].idx, f.verts[3].idx, f.verts[0].idx, mat)
-        
-    yi.endTriMesh()
-    yi.smoothMesh(ID, 181)
-    yi.endGeometry()
-    
-    #
-    return ID
 
-def yafarayCameraData(yi, camera, resolution):
-    """
-    This function outputs standard camera data common to all YafaRay format Api. 
-
-    Parameters
-    ----------
-  
-    cameraSettings:
-      *list of floats*. A list of float values conveying camera and image related 
-      information. This includes the position, orientation and field of view of the
-      camera along with the screen dimensions from MakeHuman. These values are passed 
-      along to YafaRay as variables so that the default rendered image can mimic the
-      image last displayed in MakeHuman. 
-     """     
-    
-    #-- create cam ----
-    # change eyeY for eyeZ. In the YafaRay, Z is up
-    yi.paramsClearAll()
-    yi.paramsSetString("type", "perspective")
-    yi.paramsSetPoint("from", camera.eyeX, camera.eyeY, camera.eyeZ )
-    yi.paramsSetPoint("to", camera.focusX, camera.focusY, camera.focusZ )
-    yi.paramsSetPoint("up", camera.upX, camera.eyeZ, camera.eyeY )
-    yi.paramsSetInt("resx", resolution[0])
-    yi.paramsSetInt("resy", resolution[1])
-    yi.paramsSetFloat("focal", 1.5) #TO do; revised formule for calulate corrected focal value.(fovAngle ?)
-    yi.createCamera("camera")
-    #
-    yi.printInfo("Yafy: Create camera from Makehuman")
-    
