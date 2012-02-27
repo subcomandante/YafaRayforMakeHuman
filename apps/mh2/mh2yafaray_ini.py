@@ -29,34 +29,33 @@ to reload the application.
 
 print 'YafaRay Render Parameter File'
 
-
-# povman
 import sys
 import os
 import ctypes
+
+# set path and load needed dlls.
 #
-BIN_PATH="H:/makehuman/apps/yafy/bin"
+# Only changed the HOME_PATH line.
+# Lack define 'darwin' (OSX systems) path format ( same of unix?) 
+
+if sys.platform == 'win32':
+    HOME_PATH = "H:/makehuman"   # change for your own installation path
+    # Loading order of the dlls is sensible please do not alter it
+    dllArray = ['zlib1','iconv','zlib','libpng15','libxml2','QtCore4','QtGui4',\
+                'yafaraycore','yafarayplugin','yafarayqt']
+
+elif sys.platform == 'darwin':
+    HOME_PATH= '/home/user/programs/makehuman'  # need revision
+    dllArray = ['libyafaraycore.dylib', 'libyafarayplugin.dylib']
+
+else:
+    HOME_PATH="/home/pedro/programas/makehuman"  #change for your own installation path
+    dllArray = ['libyafaraycore.so', 'libyafarayplugin.so', 'libyafarayqt.so']
+# 
+BIN_PATH = HOME_PATH +"/shared/yafy/bin"
 PLUGIN_PATH = BIN_PATH +"/plugins"
 
 sys.path.append(BIN_PATH)
-
-# Preload needed libraries
-# povman = minimal Msvc version and Qt libs
-# mega = Mingw version ( by Megasoft, from Gaphicall )
-povman = True
-mega = False
-#--
-if sys.platform == 'win32':
-    if povman:
-        dllArray = ['zlib1', 'yafaraycore', 'yafarayplugin', 'yafarayqt']
-    else:
-        # Loading order of the dlls is sensible please do not alter it
-        dllArray = ['zlib1', 'libxml2-2', 'libgcc_s_sjlj-1', 'Half', 'Iex', 'IlmThread', 'IlmImf', \
-    'libjpeg-8', 'libpng14', 'libtiff-3', 'libfreetype-6', 'libyafaraycore', 'libyafarayplugin']
-elif sys.platform == 'darwin':
-    dllArray = ['libyafaraycore.dylib', 'libyafarayplugin.dylib']
-else:
-    dllArray = ['libyafaraycore.so', 'libyafarayplugin.so']
 
 for dll in dllArray:
     try:
@@ -74,7 +73,7 @@ outputpath = 'yafaray_output/'
 
 # Define the format of render; gui, console or export to xml file
 
-format = 'gui'  
+#format = 'gui'  
 
 # The YafaRay export function can just export the object or it can also call POV-Ray to
 # render a scene file. By default the scene file will be the generated sample scene file.
@@ -87,20 +86,16 @@ source = 'gui'
 # Lighting mode: 'dl' for use directlighting or 'pm' for PhotonMap 
 lighting = 'dl'
 
-# define background fron YafaRay
+# define background for YafaRay
 world = 'texture'
 
-# By default the "render" action renders the generated POV scene file, but you can
-# specify a scene file to render instead.
+# By default the "render" action renders the generated image.
 
 renderscenefile = ''  # Use "" to render the default scene file.
 
-# Configure the following variable to point to the POV-Ray executable on your system.
-# A number of typical examples are provided.
-# Don't use the backslash character in the path.
+# Configure folder to the YafaRay resource files.
 
-#
-yafaray_path = 'H:/makehuman/apps/yafy/resources'
+yafaray_path = HOME_PATH +'/shared/yafy/resources'
 
 
 
