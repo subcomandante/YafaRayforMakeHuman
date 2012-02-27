@@ -30,7 +30,7 @@ import os
 import shutil
 import subprocess
 import mh2yafaray_ini
-import random
+#import random
 import mh
 #
 from math import pi, sin, cos
@@ -118,7 +118,7 @@ def yafarayRenderer(obj, app, settings):
             yi.paramsSetInt("width", resolution[0])
             yi.paramsSetInt("height", resolution[1])
             ih = yi.createImageHandler("outFile")
-            output = yafrayinterface.imageOutput_t(ih, path_net + 'test.exr', 0, 0) # Todo; revised for Unix systems
+            output = yafrayinterface.imageOutput_t(ih, path_net + 'test.tga', 0, 0) # Todo; revised for Unix systems
         
         #
         if source == 'xml':
@@ -168,7 +168,7 @@ def yafarayTexture(yi, image_path):
 def yafarayMaterial(yi):
     # material definitions
     yi.paramsClearAll()
-    yi.paramsSetFloat("IOR",  1)
+    yi.paramsSetFloat("IOR",  0.51)
     yi.paramsSetString("bump_shader", "bump_layer")
     yi.paramsSetColor("color", 0.675, 0.38, 0.294, 0)
     yi.paramsSetString("diffuse_brdf", "oren_nayar")
@@ -322,7 +322,7 @@ def yafarayGeometry(yi, obj):
     f_count = len(faces)*2
     if len(obj.uvValues) > 0:  have_uv = True
     #
-    mat = materialMap['myMat'] # Skin_test
+    mat = materialMap['Skin_test'] # Skin_test
 
     #
     ID = yi.getNextFreeID()
