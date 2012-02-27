@@ -24,8 +24,8 @@ class YafaRayTaskView(gui3d.TaskView):
         worldBox = self.addView(gui3d.GroupBox([10, posy, 9.0], 'Background', gui3d.GroupBoxStyle._replace(height=25+24*7+6)))
         world=[]
         self.sunskyButton = worldBox.addView(gui3d.RadioButton(world, 'SunSky'))
-        self.texButton = worldBox.addView(gui3d.RadioButton(world, 'Texture', selected = True))
-        self.colButton = worldBox.addView(gui3d.RadioButton(world, 'Color'))
+        self.texButton = worldBox.addView(gui3d.RadioButton(world, 'Texture'))
+        self.colButton = worldBox.addView(gui3d.RadioButton(world, 'Color', selected = True))
         #
         lightingBox = self.addView(gui3d.GroupBox([10, 190, 9.0], 'Integrators', gui3d.GroupBoxStyle._replace(height=25+24*7+6)))
         lighting = []
@@ -56,7 +56,6 @@ class YafaRayTaskView(gui3d.TaskView):
             reload(mh2yafaray)  # Avoid having to close and reopen MH for every coding change (can be removed once testing is complete)
             mh2yafaray.yafarayRenderer(gui3d.app.selectedHuman.mesh, gui3d.app,
                 {'source':'console' if self.consoleButton.selected else 'gui' if self.guiButton.selected else 'xml',
-                 'format':'xml' if self.xmlButton.selected else 'gui',
                  'lighting':'dl' if self.dlButton.selected else 'pm',
                  'world':'sunsky' if self.sunskyButton.selected else 'texture' if self.texButton.selected else 'color'})
 
